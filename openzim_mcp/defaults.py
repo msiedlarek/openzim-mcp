@@ -84,6 +84,9 @@ class ServerDefaults:
 
     NAME: str = "openzim-mcp"
     TOOL_MODE: str = "simple"
+    TRANSPORT: str = "stdio"
+    HOST: str = "::"
+    PORT: int = 8000
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 

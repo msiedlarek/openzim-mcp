@@ -69,7 +69,7 @@ class OpenZimMcpServer:
             self.simple_tools_handler = SimpleToolsHandler(self.zim_operations)
 
         # Initialize MCP server
-        self.mcp = FastMCP(config.server_name)
+        self.mcp = FastMCP(config.server_name, host=config.host, port=config.port)
         self._register_tools()
 
         logger.info(

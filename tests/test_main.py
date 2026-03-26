@@ -34,7 +34,7 @@ class TestMainModule:
         # Verify calls
         mock_config_class.assert_called_once_with(allowed_directories=["/test/dir"])
         mock_server_class.assert_called_once_with(mock_config, mock_tracker)
-        mock_server.run.assert_called_once_with(transport="stdio")
+        mock_server.run.assert_called_once_with(transport=mock_config.transport)
 
     @patch("openzim_mcp.main.InstanceTracker")
     @patch("openzim_mcp.main.OpenZimMcpServer")
@@ -129,6 +129,161 @@ class TestMainModule:
             main()
 
         assert exc_info.value.code == 1
+
+    @patch("openzim_mcp.main.InstanceTracker")
+    @patch("openzim_mcp.main.OpenZimMcpServer")
+    @patch("openzim_mcp.main.OpenZimMcpConfig")
+    @patch("sys.argv", ["openzim_mcp", "--transport", "sse", "/test/dir"])
+    def test_main_with_transport_sse(
+        self, mock_config_class, mock_server_class, mock_tracker_class
+    ):
+        """Test main with SSE transport."""
+        from openzim_mcp.main import main
+
+        mock_config = MagicMock()
+        mock_config_class.return_value = mock_config
+        mock_server = MagicMock()
+        mock_server_class.return_value = mock_server
+        mock_tracker = MagicMock()
+        mock_tracker_class.return_value = mock_tracker
+
+        main()
+
+        mock_config_class.assert_called_once_with(
+            allowed_directories=["/test/dir"], transport="sse"
+        )
+        mock_server.run.assert_called_once_with(transport=mock_config.transport)
+
+    @patch("openzim_mcp.main.InstanceTracker")
+    @patch("openzim_mcp.main.OpenZimMcpServer")
+    @patch("openzim_mcp.main.OpenZimMcpConfig")
+    @patch(
+        "sys.argv",
+        [
+            "openzim_mcp",
+            "--transport",
+            "streamable-http",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "9000",
+            "/test/dir",
+        ],
+    )
+    def test_main_with_all_transport_options(
+        self, mock_config_class, mock_server_class, mock_tracker_class
+    ):
+        """Test main with transport, host, and port options."""
+        from openzim_mcp.main import main
+
+        mock_config = MagicMock()
+        mock_config_class.return_value = mock_config
+        mock_server = MagicMock()
+        mock_server_class.return_value = mock_server
+        mock_tracker = MagicMock()
+        mock_tracker_class.return_value = mock_tracker
+
+        main()
+
+        mock_config_class.assert_called_once_with(
+            allowed_directories=["/test/dir"],
+            transport="streamable-http",
+            host="0.0.0.0",
+            port=9000,
+        )
+
+    @patch("sys.argv", ["openzim_mcp", "--transport", "invalid", "/test/dir"])
+    @patch("sys.stderr")
+    def test_main_invalid_transport(self, mock_stderr):
+        """Test main with invalid transport rejected by argparse."""
+        from openzim_mcp.main import main
+
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        assert exc_info.value.code == 2  # argparse error exit code
+
+    @patch("openzim_mcp.main.InstanceTracker")
+    @patch("openzim_mcp.main.OpenZimMcpServer")
+    @patch("openzim_mcp.main.OpenZimMcpConfig")
+    @patch(
+        "sys.argv",
+        ["openzim_mcp", "--host", "::", "--port", "3000", "/test/dir"],
+    )
+    def test_main_host_port_without_transport(
+        self, mock_config_class, mock_server_class, mock_tracker_class
+    ):
+        """Test host and port without explicit transport."""
+        from openzim_mcp.main import main
+
+        mock_config = MagicMock()
+        mock_config_class.return_value = mock_config
+        mock_server = MagicMock()
+        mock_server_class.return_value = mock_server
+        mock_tracker = MagicMock()
+        mock_tracker_class.return_value = mock_tracker
+
+        main()
+
+        mock_config_class.assert_called_once_with(
+            allowed_directories=["/test/dir"],
+            host="::",
+            port=3000,
+        )
+
+    @patch("openzim_mcp.main.InstanceTracker")
+    @patch("openzim_mcp.main.OpenZimMcpServer")
+    @patch("openzim_mcp.main.OpenZimMcpConfig")
+    @patch(
+        "sys.argv",
+        ["openzim_mcp", "--transport", "sse", "--host", "::1", "/test/dir"],
+    )
+    def test_main_ipv6_localhost(
+        self, mock_config_class, mock_server_class, mock_tracker_class
+    ):
+        """Test main with IPv6 localhost."""
+        from openzim_mcp.main import main
+
+        mock_config = MagicMock()
+        mock_config_class.return_value = mock_config
+        mock_server = MagicMock()
+        mock_server_class.return_value = mock_server
+        mock_tracker = MagicMock()
+        mock_tracker_class.return_value = mock_tracker
+
+        main()
+
+        mock_config_class.assert_called_once_with(
+            allowed_directories=["/test/dir"],
+            transport="sse",
+            host="::1",
+        )
+
+    @patch("openzim_mcp.main.InstanceTracker")
+    @patch("openzim_mcp.main.OpenZimMcpServer")
+    @patch("openzim_mcp.main.OpenZimMcpConfig")
+    @patch(
+        "sys.argv",
+        ["openzim_mcp", "--host", "0.0.0.0", "--port", "3000", "/test/dir"],
+    )
+    def test_main_warns_host_port_with_stdio(
+        self, mock_config_class, mock_server_class, mock_tracker_class, capsys
+    ):
+        """Test that a warning is printed when host/port are set with stdio transport."""
+        from openzim_mcp.main import main
+
+        mock_config = MagicMock()
+        mock_config.transport = "stdio"
+        mock_config_class.return_value = mock_config
+        mock_server = MagicMock()
+        mock_server_class.return_value = mock_server
+        mock_tracker = MagicMock()
+        mock_tracker_class.return_value = mock_tracker
+
+        main()
+
+        captured = capsys.readouterr()
+        assert "ignored with stdio transport" in captured.err
 
 
 class TestMainEntryPoint:

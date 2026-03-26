@@ -1,7 +1,7 @@
 """Tests for server module."""
 
 import asyncio
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -61,6 +61,36 @@ class TestOpenZimMcpServer:
         # Verify logging was set up (covers lines 32-33, 47)
         # We can't easily test the logging setup directly, but we can verify
         # the server was initialized successfully which means logging worked
+
+    @patch("openzim_mcp.server.FastMCP")
+    def test_server_passes_host_port_to_fastmcp(self, mock_fastmcp_class, temp_dir):
+        """Test that host and port from config are passed to FastMCP."""
+        config = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            host="0.0.0.0",
+            port=9000,
+            transport="sse",
+        )
+        OpenZimMcpServer(config)
+        mock_fastmcp_class.assert_called_once_with(
+            config.server_name, host="0.0.0.0", port=9000
+        )
+
+    def test_server_run_with_sse_transport(self, test_config: OpenZimMcpConfig):
+        """Test server run with SSE transport."""
+        server = OpenZimMcpServer(test_config)
+        server.mcp.run = MagicMock()
+        server.run(transport="sse")
+        server.mcp.run.assert_called_once_with(transport="sse")
+
+    def test_server_run_with_streamable_http_transport(
+        self, test_config: OpenZimMcpConfig
+    ):
+        """Test server run with streamable-http transport."""
+        server = OpenZimMcpServer(test_config)
+        server.mcp.run = MagicMock()
+        server.run(transport="streamable-http")
+        server.mcp.run.assert_called_once_with(transport="streamable-http")
 
     def test_list_zim_files_tool(self, test_config: OpenZimMcpConfig):
         """Test list_zim_files functionality."""

@@ -21,7 +21,9 @@ from .constants import (
     DEFAULT_SEARCH_LIMIT,
     DEFAULT_SNIPPET_LENGTH,
     VALID_TOOL_MODES,
+    VALID_TRANSPORT_TYPES,
 )
+from .defaults import ServerDefaults
 from .exceptions import OpenZimMcpConfigurationError
 
 
@@ -89,6 +91,22 @@ class OpenZimMcpConfig(BaseSettings):
         ),
     )
 
+    # Transport settings
+    transport: Literal["stdio", "sse", "streamable-http"] = Field(
+        default="stdio",  # Must be a literal for type checking; mirrors ServerDefaults.TRANSPORT
+        description="Transport protocol: 'stdio', 'sse', or 'streamable-http'",
+    )
+    host: str = Field(
+        default=ServerDefaults.HOST,
+        description="Host address to bind to (for SSE/streamable-http transports)",
+    )
+    port: int = Field(
+        default=ServerDefaults.PORT,
+        ge=1,
+        le=65535,
+        description="Port to listen on (for SSE/streamable-http transports)",
+    )
+
     model_config = SettingsConfigDict(
         env_prefix="OPENZIM_MCP_",
         env_nested_delimiter="__",
@@ -122,6 +140,17 @@ class OpenZimMcpConfig(BaseSettings):
         if v not in VALID_TOOL_MODES:
             raise OpenZimMcpConfigurationError(
                 f"Invalid tool mode: {v}. Must be one of {VALID_TOOL_MODES}"
+            )
+        return v
+
+    @field_validator("transport")
+    @classmethod
+    def validate_transport(cls, v: str) -> str:
+        """Validate transport type."""
+        if v not in VALID_TRANSPORT_TYPES:
+            raise OpenZimMcpConfigurationError(
+                f"Invalid transport: '{v}'. "
+                f"Must be one of: {', '.join(sorted(VALID_TRANSPORT_TYPES))}"
             )
         return v
 
@@ -160,6 +189,9 @@ class OpenZimMcpConfig(BaseSettings):
             "rate_limit_enabled": self.rate_limit.enabled,
             "rate_limit_rps": self.rate_limit.requests_per_second,
             "rate_limit_burst": self.rate_limit.burst_size,
+            "transport": self.transport,
+            "host": self.host,
+            "port": self.port,
         }
 
         # Convert to JSON string with sorted keys for consistent hashing

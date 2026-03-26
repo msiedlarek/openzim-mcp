@@ -137,3 +137,125 @@ class TestOpenZimMcpConfig:
         assert config.cache.enabled is True
         assert config.content.max_content_length == 100000
         assert config.logging.level == "INFO"
+        assert config.transport == "stdio"
+        assert config.host == "::"
+        assert config.port == 8000
+
+
+class TestTransportConfig:
+    """Test transport, host, and port configuration."""
+
+    def test_transport_defaults(self, temp_dir: Path):
+        """Test default transport settings."""
+        config = OpenZimMcpConfig(allowed_directories=[str(temp_dir)])
+        assert config.transport == "stdio"
+        assert config.host == "::"
+        assert config.port == 8000
+
+    def test_transport_stdio(self, temp_dir: Path):
+        """Test stdio transport."""
+        config = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            transport="stdio",
+        )
+        assert config.transport == "stdio"
+
+    def test_transport_sse(self, temp_dir: Path):
+        """Test SSE transport with custom host and port."""
+        config = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            transport="sse",
+            host="0.0.0.0",
+            port=9000,
+        )
+        assert config.transport == "sse"
+        assert config.host == "0.0.0.0"
+        assert config.port == 9000
+
+    def test_transport_streamable_http(self, temp_dir: Path):
+        """Test streamable-http transport."""
+        config = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            transport="streamable-http",
+        )
+        assert config.transport == "streamable-http"
+
+    def test_invalid_transport(self, temp_dir: Path):
+        """Test that invalid transport raises error."""
+        with pytest.raises(ValueError):
+            OpenZimMcpConfig(
+                allowed_directories=[str(temp_dir)],
+                transport="invalid",
+            )
+
+    def test_port_too_low(self, temp_dir: Path):
+        """Test that port 0 is rejected."""
+        with pytest.raises(ValueError):
+            OpenZimMcpConfig(
+                allowed_directories=[str(temp_dir)],
+                port=0,
+            )
+
+    def test_port_too_high(self, temp_dir: Path):
+        """Test that port above 65535 is rejected."""
+        with pytest.raises(ValueError):
+            OpenZimMcpConfig(
+                allowed_directories=[str(temp_dir)],
+                port=70000,
+            )
+
+    def test_ipv6_dual_stack_host(self, temp_dir: Path):
+        """Test IPv6 dual-stack host (default)."""
+        config = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            host="::",
+        )
+        assert config.host == "::"
+
+    def test_ipv6_localhost(self, temp_dir: Path):
+        """Test IPv6 localhost."""
+        config = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            host="::1",
+        )
+        assert config.host == "::1"
+
+    def test_ipv4_all_interfaces(self, temp_dir: Path):
+        """Test IPv4 all interfaces."""
+        config = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            host="0.0.0.0",
+        )
+        assert config.host == "0.0.0.0"
+
+    def test_ipv4_localhost(self, temp_dir: Path):
+        """Test IPv4 localhost."""
+        config = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            host="127.0.0.1",
+        )
+        assert config.host == "127.0.0.1"
+
+    def test_port_boundary_values(self, temp_dir: Path):
+        """Test valid port boundary values."""
+        config_min = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            port=1,
+        )
+        assert config_min.port == 1
+
+        config_max = OpenZimMcpConfig(
+            allowed_directories=[str(temp_dir)],
+            port=65535,
+        )
+        assert config_max.port == 65535
+
+    def test_transport_from_env(self, temp_dir: Path, monkeypatch):
+        """Test transport settings from environment variables."""
+        monkeypatch.setenv("OPENZIM_MCP_TRANSPORT", "sse")
+        monkeypatch.setenv("OPENZIM_MCP_HOST", "0.0.0.0")
+        monkeypatch.setenv("OPENZIM_MCP_PORT", "9000")
+        config = OpenZimMcpConfig(allowed_directories=[str(temp_dir)])
+        assert config.transport == "sse"
+        assert config.host == "0.0.0.0"
+        assert config.port == 9000

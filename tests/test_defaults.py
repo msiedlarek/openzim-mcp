@@ -156,6 +156,9 @@ class TestServerDefaults:
         """Test server default values."""
         assert ServerDefaults.NAME == "openzim-mcp"
         assert ServerDefaults.TOOL_MODE == "simple"
+        assert ServerDefaults.TRANSPORT == "stdio"
+        assert ServerDefaults.HOST == "::"
+        assert ServerDefaults.PORT == 8000
         assert ServerDefaults.LOG_LEVEL == "INFO"
         assert "%(asctime)s" in ServerDefaults.LOG_FORMAT
 
@@ -163,6 +166,9 @@ class TestServerDefaults:
         """Test SERVER instance has correct values."""
         assert SERVER.NAME == "openzim-mcp"
         assert SERVER.TOOL_MODE == "simple"
+        assert SERVER.TRANSPORT == "stdio"
+        assert SERVER.HOST == "::"
+        assert SERVER.PORT == 8000
 
 
 class TestToolModeConstants:

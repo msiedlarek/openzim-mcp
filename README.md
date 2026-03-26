@@ -110,13 +110,18 @@ mkdir ~/zim-files
 ### Running the Server
 
 ```bash
-# Simple mode (default) - 1 intelligent natural language tool
+# Simple mode with stdio transport (default)
 openzim-mcp /path/to/zim/files
 python -m openzim_mcp /path/to/zim/files
 
-# Advanced mode - all 18 specialized tools
+# Advanced mode
 openzim-mcp --mode advanced /path/to/zim/files
-python -m openzim_mcp --mode advanced /path/to/zim/files
+
+# SSE transport (for HTTP-based MCP clients)
+openzim-mcp --transport sse /path/to/zim/files
+
+# Streamable HTTP transport on custom host and port
+openzim-mcp --transport streamable-http --host 0.0.0.0 --port 9000 /path/to/zim/files
 
 # For development (from source)
 uv run python -m openzim_mcp /path/to/zim/files
@@ -155,6 +160,28 @@ See [Simple Mode Guide](docs/SIMPLE_MODE_GUIDE.md) for detailed information.
   "openzim-mcp-advanced": {
     "command": "openzim-mcp",
     "args": ["--mode", "advanced", "/path/to/zim/files"]
+  }
+}
+```
+
+**SSE Transport:**
+
+```json
+{
+  "openzim-mcp": {
+    "command": "openzim-mcp",
+    "args": ["--transport", "sse", "--port", "8000", "/path/to/zim/files"]
+  }
+}
+```
+
+**Streamable HTTP Transport:**
+
+```json
+{
+  "openzim-mcp": {
+    "command": "openzim-mcp",
+    "args": ["--transport", "streamable-http", "--host", "::", "--port", "9000", "/path/to/zim/files"]
   }
 }
 ```
@@ -1243,6 +1270,11 @@ export OPENZIM_MCP_LOGGING__FORMAT="%(asctime)s - %(name)s - %(levelname)s - %(m
 
 # Server configuration
 export OPENZIM_MCP_SERVER_NAME=my_openzim_mcp_server
+
+# Transport configuration
+export OPENZIM_MCP_TRANSPORT=sse           # stdio, sse, or streamable-http
+export OPENZIM_MCP_HOST=::                 # Listen host (default: ::)
+export OPENZIM_MCP_PORT=8000               # Listen port (default: 8000)
 ```
 
 ### Configuration Options
@@ -1258,6 +1290,9 @@ export OPENZIM_MCP_SERVER_NAME=my_openzim_mcp_server
 | `OPENZIM_MCP_LOGGING__LEVEL` | `INFO` | Logging level |
 | `OPENZIM_MCP_LOGGING__FORMAT` | `%(asctime)s - %(name)s - %(levelname)s - %(message)s` | Log message format |
 | `OPENZIM_MCP_SERVER_NAME` | `openzim-mcp` | Server instance name |
+| `OPENZIM_MCP_TRANSPORT` | `stdio` | Transport protocol (`stdio`, `sse`, `streamable-http`) |
+| `OPENZIM_MCP_HOST` | `::` | Host address to bind to (for SSE/streamable-http) |
+| `OPENZIM_MCP_PORT` | `8000` | Port to listen on (for SSE/streamable-http) |
 
 ---
 
